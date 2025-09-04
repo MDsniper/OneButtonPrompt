@@ -14,21 +14,28 @@ Multi-model AI prompt generator with a clean, portfolio-inspired interface. Gene
 
 ## Deployment with Coolify
 
-This project is configured for deployment with [Coolify](https://coolify.io) using Nixpacks buildpack.
+This project can be deployed with [Coolify](https://coolify.io) using either Dockerfile or Nixpacks.
 
 ### Prerequisites
 
 - Coolify instance running
 - GitHub repository connected to Coolify
 
-### Quick Deploy
+### Quick Deploy (Recommended - Dockerfile)
 
 1. Fork or clone this repository to your GitHub account
 2. In Coolify, create a new application
 3. Select "GitHub" as the source
 4. Choose this repository
-5. Coolify will automatically detect the `nixpacks.toml` configuration
-6. Deploy!
+5. In Build Pack settings, select "Dockerfile"
+6. Set Dockerfile path to: `./Dockerfile.coolify`
+7. Deploy!
+
+### Alternative: Nixpacks Deploy
+
+1. Use the included `nixpacks.toml` configuration
+2. Coolify will auto-detect Nixpacks buildpack
+3. Deploy!
 
 ### Environment Variables
 
