@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  backend:
+    image: onebuttonprompt-backend:latest
+    container_name: obp-backend
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=production
+      - CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+    volumes:
+      - ./data/outputs:/app/automated_outputs
+      - ./data/csvfiles:/app/csvfiles
+      - ./data/userfiles:/app/userfiles
+    networks:
+      - obp-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.obp-api.rule=Host(`api.yourdomain.com`)"
+      - "traefik.http.routers.obp-api.entrypoints=websecure"
+      - "traefik.http.routers.obp-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.obp-api.loadbalancer.server.port=5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    image: onebuttonprompt-frontend:latest
+    container_name: obp-frontend
+    restart: always
+    networks:
+      - obp-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.obp.rule=Host(`yourdomain.com`) || Host(`www.yourdomain.com`)"
+      - "traefik.http.routers.obp.entrypoints=websecure"
+      - "traefik.http.routers.obp.tls.certresolver=letsencrypt"
+      - "traefik.http.services.obp.loadbalancer.server.port=80"
+      # Redirect www to non-www
+      - "traefik.http.middlewares.obp-www-redirect.redirectregex.regex=^https://www\\.(.*)$$"
+      - "traefik.http.middlewares.obp-www-redirect.redirectregex.replacement=https://$$1"
+      - "traefik.http.routers.obp.middlewares=obp-www-redirect"
+
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: always
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=your-email@example.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # HTTP to HTTPS redirect
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - obp-network
+
+networks:
+  obp-network:
+    driver: bridge

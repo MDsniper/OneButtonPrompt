@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  onebuttonprompt:
+    build: .
+    container_name: onebuttonprompt
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./automated_outputs:/app/automated_outputs
+      - ./csvfiles:/app/csvfiles
+      - ./userfiles:/app/userfiles
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - obp-network
+    labels:
+      - "com.onebuttonprompt.description=AI Prompt Generator Backend"
+      - "com.onebuttonprompt.version=1.0"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build: ./frontend
+    container_name: onebuttonprompt-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - obp-network
+    depends_on:
+      - onebuttonprompt
+    labels:
+      - "com.onebuttonprompt.description=AI Prompt Generator Frontend"
+      - "com.onebuttonprompt.version=1.0"
+
+networks:
+  obp-network:
+    driver: bridge
